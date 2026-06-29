@@ -42,5 +42,25 @@ if [ -n "${CUSTOM_ADDONS_REPO}" ]; then
     fi
 fi
 
+# --- Inicialización de BD + instalación de módulos (opcional) --------
+# ODOO_DB              = nombre de la base de datos Odoo a crear/usar
+# ODOO_INSTALL_MODULES = lista separada por comas de módulos a instalar
+# Se ejecuta en el primer arranque y cada vez que cambie la lista
+# (instalar un módulo ya instalado es un no-op).
+if [ -n "${ODOO_DB}" ]; then
+    WANT="base${ODOO_INSTALL_MODULES:+,${ODOO_INSTALL_MODULES}}"
+    FLAG="/var/lib/odoo/.installed-${ODOO_DB}"
+    PREV="$(cat "$FLAG" 2>/dev/null || echo '')"
+    if [ "$WANT" != "$PREV" ]; then
+        echo "[init] BD '${ODOO_DB}': instalando -> ${WANT}"
+        odoo -d "${ODOO_DB}" -i "${WANT}" \
+            --db_host="${HOST}" --db_port="${PORT:-5432}" \
+            --db_user="${USER}" --db_password="${PASSWORD}" \
+            --stop-after-init --no-http \
+            && echo "${WANT}" > "$FLAG" \
+            || echo "[init] WARN: la inicialización/instalación falló"
+    fi
+fi
+
 # Delega en el entrypoint oficial de la imagen odoo:18
 exec /entrypoint.sh "$@"
