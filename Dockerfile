@@ -18,6 +18,9 @@ RUN apt-get update \
         libsasl2-dev \
         libldap2-dev \
         libssl-dev \
+        fontconfig \
+        fonts-liberation \
+        default-jdk-headless \
     && pip3 install --break-system-packages --no-cache-dir git-aggregator \
     && rm -rf /var/lib/apt/lists/*
 

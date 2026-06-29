@@ -425,3 +425,10 @@
   remotes: {oca: https://github.com/OCA/web-api.git}
   merges: [oca 18.0]
   target: oca 18.0
+
+# Acuerdos legales (agreement_legal, agreement_sign_oca, etc.)
+/opt/oca/agreement:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/agreement.git}
+  merges: [oca 18.0]
+  target: oca 18.0
