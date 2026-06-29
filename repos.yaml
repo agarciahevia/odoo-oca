@@ -1,0 +1,427 @@
+# =====================================================================
+# Manifiesto git-aggregator — Odoo 18 + OCA (rama 18.0)
+#
+# Para actualizar el set: añade/quita bloques y vuelve a desplegar.
+# Si un repo todavía no tiene rama 18.0, comenta su bloque (el build
+# fallaría si la rama no existe).
+#
+# El ancla &shallow hace clones superficiales (build más rápido/ligero).
+# =====================================================================
+
+# ---- Núcleo "enterprise-like" (UI, herramientas de servidor) --------
+/opt/oca/web:
+  defaults: &shallow
+    depth: 1
+  remotes:
+    oca: https://github.com/OCA/web.git
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/server-tools:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/server-tools.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/server-ux:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/server-ux.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/server-auth:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/server-auth.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/server-brand:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/server-brand.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/server-backend:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/server-backend.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+# ---- Contabilidad y finanzas ----------------------------------------
+/opt/oca/account-financial-reporting:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/account-financial-reporting.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/account-financial-tools:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/account-financial-tools.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/account-invoicing:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/account-invoicing.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/account-payment:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/account-payment.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/account-reconcile:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/account-reconcile.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/account-closing:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/account-closing.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/account-analytic:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/account-analytic.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/mis-builder:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/mis-builder.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/bank-payment:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/bank-payment.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/currency:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/currency.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/reporting-engine:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/reporting-engine.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/report-print-send:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/report-print-send.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+# ---- Localización española (AEOdoo / OCA) ---------------------------
+/opt/oca/l10n-spain:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/l10n-spain.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+# ---- Contactos / partners -------------------------------------------
+/opt/oca/partner-contact:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/partner-contact.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+# ---- Ventas / compras / comisiones ----------------------------------
+/opt/oca/sale-workflow:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/sale-workflow.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/commission:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/commission.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/purchase-workflow:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/purchase-workflow.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+# ---- Inventario / logística -----------------------------------------
+/opt/oca/stock-logistics-workflow:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/stock-logistics-workflow.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/stock-logistics-warehouse:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/stock-logistics-warehouse.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/stock-logistics-reporting:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/stock-logistics-reporting.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/delivery-carrier:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/delivery-carrier.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+# ---- Producto -------------------------------------------------------
+/opt/oca/product-attribute:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/product-attribute.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/product-variant:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/product-variant.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+# ---- Fabricación ----------------------------------------------------
+/opt/oca/manufacture:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/manufacture.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+# ---- RRHH / proyectos -----------------------------------------------
+/opt/oca/hr:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/hr.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/hr-expense:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/hr-expense.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/hr-attendance:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/hr-attendance.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/timesheet:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/timesheet.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/project:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/project.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+# ---- Helpdesk / CRM / contratos (enterprise-like) -------------------
+/opt/oca/helpdesk:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/helpdesk.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/crm:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/crm.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/contract:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/contract.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+# ---- Infra / colas / DMS / conocimiento -----------------------------
+/opt/oca/queue:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/queue.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/connector:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/connector.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/dms:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/dms.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/knowledge:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/knowledge.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+# ---- Web pública / social / varios ----------------------------------
+/opt/oca/website:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/website.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/social:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/social.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/maintenance:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/maintenance.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/fleet:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/fleet.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/survey:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/survey.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/event:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/event.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/multi-company:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/multi-company.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+# =====================================================================
+# AMPLIACIÓN "enterprise-like" + contabilidad completa (rama 18.0 verificada)
+# =====================================================================
+
+# ---- Contabilidad / finanzas (refuerzo) -----------------------------
+# Incluye conciliación, follow-ups, presupuestos, consolidación, etc.
+/opt/oca/bank-statement-import:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/bank-statement-import.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/credit-control:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/credit-control.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/account-budgeting:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/account-budgeting.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/account-consolidation:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/account-consolidation.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/account-fiscal-rule:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/account-fiscal-rule.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/account-invoice-reporting:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/account-invoice-reporting.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/intrastat-extrastat:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/intrastat-extrastat.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+# ---- Factura electrónica / EDI --------------------------------------
+/opt/oca/edi-framework:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/edi-framework.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/edi:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/edi.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+# ---- Procesos enterprise-like ---------------------------------------
+/opt/oca/pos:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/pos.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/field-service:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/field-service.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/sign:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/sign.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/e-commerce:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/e-commerce.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/stock-logistics-barcode:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/stock-logistics-barcode.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/hr-holidays:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/hr-holidays.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/data-protection:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/data-protection.git}
+  merges: [oca 18.0]
+  target: oca 18.0
+
+/opt/oca/web-api:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/web-api.git}
+  merges: [oca 18.0]
+  target: oca 18.0

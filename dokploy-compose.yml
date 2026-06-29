@@ -1,0 +1,34 @@
+# Compose que usa Dokploy (Modelo B): construye el Dockerfile de este repo.
+# La base de datos va en un despliegue aparte (la crea el instalador).
+# Los valores por-instancia llegan como variables de entorno (Dokploy → env).
+services:
+  odoo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      HOST: ${HOST}
+      PORT: ${PORT:-5432}
+      USER: ${USER}
+      PASSWORD: ${PASSWORD}
+      ODOO_MASTER_PASSWORD: ${ODOO_MASTER_PASSWORD}
+      ODOO_WORKERS: ${ODOO_WORKERS:-2}
+      CUSTOM_ADDONS_REPO: ${CUSTOM_ADDONS_REPO:-}
+      CUSTOM_ADDONS_BRANCH: ${CUSTOM_ADDONS_BRANCH:-main}
+      CUSTOM_ADDONS_TOKEN: ${CUSTOM_ADDONS_TOKEN:-}
+    volumes:
+      - odoo-data:/var/lib/odoo
+      - extra-addons:/mnt/extra-addons
+    networks:
+      - dokploy-network
+    expose:
+      - "8069"
+    restart: unless-stopped
+
+volumes:
+  odoo-data:
+  extra-addons:
+
+networks:
+  dokploy-network:
+    external: true

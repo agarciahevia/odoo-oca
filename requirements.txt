@@ -1,0 +1,17 @@
+# Dependencias Python extra requeridas por varios módulos OCA y la
+# localización española (l10n_es_aeat / SII / Facturae, MIS Builder, etc.)
+openupgradelib
+python-stdnum
+num2words
+phonenumbers
+vobject
+xlsxwriter
+xlrd
+openpyxl
+zeep
+xmlsig
+cryptography
+pycryptodome
+requests
+unidecode
+pdfminer.six

@@ -1,0 +1,4 @@
+.env
+extra-addons/
+__pycache__/
+*.pyc
