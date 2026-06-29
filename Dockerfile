@@ -38,7 +38,7 @@ COPY odoo.conf /etc/odoo/odoo.conf
 RUN ADDONS=$(find /opt/oca -mindepth 1 -maxdepth 1 -type d | sort | paste -sd, -) \
     && printf 'addons_path = /usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons,%s\n' "$ADDONS" >> /etc/odoo/odoo.conf \
     && mkdir -p /mnt/extra-addons \
-    && chown -R odoo:odoo /opt/oca /mnt/extra-addons /etc/odoo/odoo.conf
+    && chown -R odoo:odoo /opt/oca /mnt/extra-addons /etc/odoo
 
 # Entrypoint propio: inyecta la master password y delega en el oficial
 COPY entrypoint.sh /opt/entrypoint.sh
