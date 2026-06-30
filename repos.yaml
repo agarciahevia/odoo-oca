@@ -432,3 +432,10 @@
   remotes: {oca: https://github.com/OCA/agreement.git}
   merges: [oca 18.0]
   target: oca 18.0
+
+# Mejoras de correo/Discuss (mail_tracking, mail_debrand, mail_outbound_static…)
+/opt/oca/mail:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/mail.git}
+  merges: [oca 18.0]
+  target: oca 18.0
