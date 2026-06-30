@@ -49,16 +49,23 @@ fi
 # (instalar un módulo ya instalado es un no-op).
 if [ -n "${ODOO_DB}" ]; then
     WANT="base${ODOO_INSTALL_MODULES:+,${ODOO_INSTALL_MODULES}}"
+    DBARGS="--db_host=${HOST} --db_port=${PORT:-5432} --db_user=${USER} --db_password=${PASSWORD}"
+    LANG_OPT=""
+    [ -n "${ODOO_LANGUAGE}" ] && LANG_OPT="--load-language=${ODOO_LANGUAGE}"
     FLAG="/var/lib/odoo/.installed-${ODOO_DB}"
     PREV="$(cat "$FLAG" 2>/dev/null || echo '')"
-    if [ "$WANT" != "$PREV" ]; then
-        echo "[init] BD '${ODOO_DB}': instalando -> ${WANT}"
-        odoo -d "${ODOO_DB}" -i "${WANT}" \
-            --db_host="${HOST}" --db_port="${PORT:-5432}" \
-            --db_user="${USER}" --db_password="${PASSWORD}" \
-            --stop-after-init --no-http \
-            && echo "${WANT}" > "$FLAG" \
-            || echo "[init] WARN: la inicialización/instalación falló"
+    if [ "${WANT}|${ODOO_LANGUAGE}" != "$PREV" ]; then
+        echo "[init] BD '${ODOO_DB}': instalando -> ${WANT} (idioma ${ODOO_LANGUAGE:-en_US})"
+        if odoo -d "${ODOO_DB}" -i "${WANT}" ${LANG_OPT} ${DBARGS} --stop-after-init --no-http; then
+            # Fija el idioma por defecto de los usuarios (UI en español)
+            if [ -n "${ODOO_LANGUAGE}" ]; then
+                echo "env['res.users'].search([]).write({'lang': '${ODOO_LANGUAGE}'}); env.cr.commit()" \
+                  | odoo shell -d "${ODOO_DB}" ${DBARGS} --no-http 2>/dev/null || true
+            fi
+            echo "${WANT}|${ODOO_LANGUAGE}" > "$FLAG"
+        else
+            echo "[init] WARN: la inicialización/instalación falló"
+        fi
     fi
 fi
 
