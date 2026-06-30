@@ -439,3 +439,9 @@
   remotes: {oca: https://github.com/OCA/mail.git}
   merges: [oca 18.0]
   target: oca 18.0
+
+/opt/oca/OpenUpgrade:
+  defaults: *shallow
+  remotes: {oca: https://github.com/OCA/OpenUpgrade.git}
+  merges: [oca 18.0]
+  target: oca 18.0
