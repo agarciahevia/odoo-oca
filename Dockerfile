@@ -39,9 +39,11 @@ COPY odoo.conf /etc/odoo/odoo.conf
 # Genera addons_path con TODOS los repos descargados + carpeta de addons propios.
 # Así el addons_path se adapta solo a lo que haya en repos.yaml.
 RUN ADDONS=$(find /opt/oca -mindepth 1 -maxdepth 1 -type d | sort | paste -sd, -) \
-    && printf 'addons_path = /usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons,%s\n' "$ADDONS" >> /etc/odoo/odoo.conf \
-    && mkdir -p /mnt/extra-addons \
-    && chown -R odoo:odoo /opt/oca /mnt/extra-addons /etc/odoo
+    && BASE="/usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons,${ADDONS}" \
+    && printf 'addons_path = %s\n' "$BASE" >> /etc/odoo/odoo.conf \
+    && printf '%s' "$BASE" > /etc/odoo/.addons_base \
+    && mkdir -p /mnt/extra-addons /mnt/custom-addons \
+    && chown -R odoo:odoo /opt/oca /mnt/extra-addons /mnt/custom-addons /etc/odoo
 
 # Entrypoint propio: inyecta la master password y delega en el oficial
 COPY entrypoint.sh /opt/entrypoint.sh

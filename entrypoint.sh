@@ -18,27 +18,42 @@ if [ -n "${ODOO_WORKERS}" ]; then
     sed -i "s|^workers.*|workers = ${ODOO_WORKERS}|" "$CONF"
 fi
 
-# --- Addons a medida desde un repo Git (privado opcional) ------------
-# CUSTOM_ADDONS_REPO  = https://github.com/tu-cuenta/tu-modulos.git
-# CUSTOM_ADDONS_BRANCH= rama (por defecto main)
-# CUSTOM_ADDONS_TOKEN = PAT de GitHub (solo lectura) si el repo es privado
+# --- Addons a medida desde uno o VARIOS repos Git --------------------
+# CUSTOM_ADDONS = specs separados por espacio; cada uno: url|branch|token
+#   (branch y token opcionales). Cada repo se clona en su carpeta y se
+#   añade al addons_path. Compatible con el antiguo CUSTOM_ADDONS_REPO.
+SPECS="${CUSTOM_ADDONS}"
 if [ -n "${CUSTOM_ADDONS_REPO}" ]; then
-    BRANCH="${CUSTOM_ADDONS_BRANCH:-main}"
-    URL="${CUSTOM_ADDONS_REPO}"
-    if [ -n "${CUSTOM_ADDONS_TOKEN}" ]; then
-        # Inyecta el token en la URL https sin dejarlo en logs de git
-        URL=$(echo "$URL" | sed -E "s#https://#https://${CUSTOM_ADDONS_TOKEN}@#")
-    fi
-    if [ -d /mnt/extra-addons/.git ]; then
-        echo "[custom-addons] Actualizando ${CUSTOM_ADDONS_REPO}#${BRANCH}"
-        git -C /mnt/extra-addons remote set-url origin "$URL"
-        git -C /mnt/extra-addons fetch --depth 1 origin "$BRANCH" \
-            && git -C /mnt/extra-addons reset --hard "origin/${BRANCH}" \
-            || echo "[custom-addons] WARN: no se pudo actualizar"
-    else
-        echo "[custom-addons] Clonando ${CUSTOM_ADDONS_REPO}#${BRANCH}"
-        git clone --depth 1 -b "$BRANCH" "$URL" /mnt/extra-addons \
-            || echo "[custom-addons] WARN: no se pudo clonar (¿token/rama correctos?)"
+    SPECS="${SPECS} ${CUSTOM_ADDONS_REPO}|${CUSTOM_ADDONS_BRANCH:-main}|${CUSTOM_ADDONS_TOKEN}"
+fi
+EXTRA_DIRS=""
+if [ -n "${SPECS}" ]; then
+    mkdir -p /mnt/custom-addons
+    for spec in ${SPECS}; do
+        IFS='|' read -r repo_url repo_branch repo_token <<< "${spec}"
+        [ -z "${repo_url}" ] && continue
+        repo_branch="${repo_branch:-main}"
+        name="$(basename "${repo_url}" .git)"
+        dest="/mnt/custom-addons/${name}"
+        aurl="${repo_url}"
+        [ -n "${repo_token}" ] && aurl="$(echo "${repo_url}" | sed -E "s#https://#https://${repo_token}@#")"
+        if [ -d "${dest}/.git" ]; then
+            echo "[addons] actualizando ${name}#${repo_branch}"
+            git -C "${dest}" remote set-url origin "${aurl}"
+            git -C "${dest}" fetch --depth 1 origin "${repo_branch}" \
+                && git -C "${dest}" reset --hard "origin/${repo_branch}" \
+                || echo "[addons] WARN: no se pudo actualizar ${name}"
+        else
+            echo "[addons] clonando ${name}#${repo_branch}"
+            git clone --depth 1 -b "${repo_branch}" "${aurl}" "${dest}" \
+                || echo "[addons] WARN: no se pudo clonar ${name} (¿token/rama?)"
+        fi
+        [ -d "${dest}" ] && EXTRA_DIRS="${EXTRA_DIRS},${dest}"
+    done
+    # Reconstruye addons_path = base + carpetas de los repos a medida
+    if [ -n "${EXTRA_DIRS}" ] && [ -f /etc/odoo/.addons_base ]; then
+        BASE="$(cat /etc/odoo/.addons_base)"
+        sed -i "s|^addons_path = .*|addons_path = ${BASE}${EXTRA_DIRS}|" "$CONF"
     fi
 fi
 
