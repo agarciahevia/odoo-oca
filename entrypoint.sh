@@ -53,16 +53,22 @@ if [ -n "${ODOO_DB}" ]; then
     LANG_OPT=""
     [ -n "${ODOO_LANGUAGE}" ] && LANG_OPT="--load-language=${ODOO_LANGUAGE}"
     FLAG="/var/lib/odoo/.installed-${ODOO_DB}"
+    STAMP="${WANT}|${ODOO_LANGUAGE}|${ODOO_COUNTRY}|${ODOO_TZ}"
     PREV="$(cat "$FLAG" 2>/dev/null || echo '')"
-    if [ "${WANT}|${ODOO_LANGUAGE}" != "$PREV" ]; then
-        echo "[init] BD '${ODOO_DB}': instalando -> ${WANT} (idioma ${ODOO_LANGUAGE:-en_US})"
+    if [ "${STAMP}" != "$PREV" ]; then
+        echo "[init] BD '${ODOO_DB}': ${WANT} | idioma=${ODOO_LANGUAGE:-en_US} país=${ODOO_COUNTRY:-} tz=${ODOO_TZ:-}"
         if odoo -d "${ODOO_DB}" -i "${WANT}" ${LANG_OPT} ${DBARGS} --stop-after-init --no-http; then
-            # Fija el idioma por defecto de los usuarios (UI en español)
-            if [ -n "${ODOO_LANGUAGE}" ]; then
-                echo "env['res.users'].search([]).write({'lang': '${ODOO_LANGUAGE}'}); env.cr.commit()" \
-                  | odoo shell -d "${ODOO_DB}" ${DBARGS} --no-http 2>/dev/null || true
+            # Fija idioma + zona horaria de los usuarios y país de la empresa
+            PY="users = env['res.users'].search([])"
+            [ -n "${ODOO_LANGUAGE}" ] && PY="${PY}; users.write({'lang': '${ODOO_LANGUAGE}'})"
+            [ -n "${ODOO_TZ}" ] && PY="${PY}; users.write({'tz': '${ODOO_TZ}'})"
+            if [ -n "${ODOO_COUNTRY}" ]; then
+                PY="${PY}; c = env['res.country'].search([('code','=','${ODOO_COUNTRY}')], limit=1)"
+                PY="${PY}; env['res.company'].search([]).mapped('partner_id').write({'country_id': c.id}) if c else None"
             fi
-            echo "${WANT}|${ODOO_LANGUAGE}" > "$FLAG"
+            PY="${PY}; env.cr.commit()"
+            echo "$PY" | odoo shell -d "${ODOO_DB}" ${DBARGS} --no-http 2>/dev/null || true
+            echo "${STAMP}" > "$FLAG"
         else
             echo "[init] WARN: la inicialización/instalación falló"
         fi
