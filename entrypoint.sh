@@ -67,12 +67,7 @@ if [ -n "${ODOO_DB}" ]; then
     DBARGS="--db_host=${HOST} --db_port=${PORT:-5432} --db_user=${USER} --db_password=${PASSWORD}"
     LANG_OPT=""
     [ -n "${ODOO_LANGUAGE}" ] && LANG_OPT="--load-language=${ODOO_LANGUAGE}"
-    FLAG="/var/lib/odoo/.installed-${ODOO_DB}"
-    STAMP="${WANT}|${ODOO_LANGUAGE}|${ODOO_COUNTRY}|${ODOO_TZ}|${ODOO_CURRENCY}"
-    PREV="$(cat "$FLAG" 2>/dev/null || echo '')"
-
-    # ¿La BD ya está inicializada? Protege los datos aunque se pierda el flag:
-    # si ya existe, NO se re-inicializa ni se sobrescribe la localización.
+    # ¿La BD ya está inicializada? Protege los datos aunque se pierda el flag.
     DB_STATE=$(python3 - "${HOST}" "${PORT:-5432}" "${USER}" "${PASSWORD}" "${ODOO_DB}" <<'PYEOF'
 import sys
 try:
@@ -94,30 +89,45 @@ except Exception:
 PYEOF
 )
 
-    if [ "${STAMP}" != "$PREV" ]; then
-        echo "[init] BD '${ODOO_DB}' estado=${DB_STATE} -> instalar: ${WANT}"
-        # -i instala SOLO los módulos que falten; nunca resetea datos existentes.
+    # --- Módulos: instala si es BD nueva o cambió la lista (nunca resetea) ---
+    MFLAG="/var/lib/odoo/.modules-${ODOO_DB}"
+    MPREV="$(cat "$MFLAG" 2>/dev/null || echo '')"
+    if [ "${DB_STATE}" = "fresh" ] || [ "${WANT}" != "$MPREV" ]; then
+        echo "[init] BD '${ODOO_DB}' estado=${DB_STATE} -> módulos: ${WANT}"
         if odoo -d "${ODOO_DB}" -i "${WANT}" ${LANG_OPT} ${DBARGS} --stop-after-init --no-http; then
-            # Localización (idioma/tz/país/moneda) SOLO en BD nueva.
-            if [ "${DB_STATE}" = "fresh" ]; then
-                PY="users = env['res.users'].search([])"
-                [ -n "${ODOO_LANGUAGE}" ] && PY="${PY}; users.write({'lang': '${ODOO_LANGUAGE}'})"
-                [ -n "${ODOO_TZ}" ] && PY="${PY}; users.write({'tz': '${ODOO_TZ}'})"
-                if [ -n "${ODOO_COUNTRY}" ]; then
-                    PY="${PY}; c = env['res.country'].search([('code','=','${ODOO_COUNTRY}')], limit=1)"
-                    PY="${PY}; env['res.company'].search([]).mapped('partner_id').write({'country_id': c.id}) if c else None"
-                fi
-                if [ -n "${ODOO_CURRENCY}" ]; then
-                    PY="${PY}; cur = env['res.currency'].with_context(active_test=False).search([('name','=','${ODOO_CURRENCY}')], limit=1)"
-                    PY="${PY}; cur.write({'active': True}) if cur else None"
-                    PY="${PY}; env['res.company'].search([]).write({'currency_id': cur.id}) if cur else None"
-                fi
-                PY="${PY}; env.cr.commit()"
-                echo "$PY" | odoo shell -d "${ODOO_DB}" ${DBARGS} --no-http 2>/dev/null || true
-            fi
-            echo "${STAMP}" > "$FLAG"
+            echo "${WANT}" > "$MFLAG"
         else
-            echo "[init] WARN: la inicialización/instalación falló"
+            echo "[init] WARN: instalación de módulos falló"
+        fi
+    fi
+
+    # --- Localización: en BD nueva o cuando cambien idioma/país/tz/moneda ---
+    LSTAMP="${ODOO_LANGUAGE}|${ODOO_COUNTRY}|${ODOO_TZ}|${ODOO_CURRENCY}"
+    LFLAG="/var/lib/odoo/.locale-${ODOO_DB}"
+    LPREV="$(cat "$LFLAG" 2>/dev/null || echo '')"
+    if [ "${DB_STATE}" = "fresh" ] || [ "${LSTAMP}" != "$LPREV" ]; then
+        echo "[init] localización -> ${LSTAMP}"
+        # Asegura que el idioma está cargado/activo (en BD ya existente)
+        if [ -n "${ODOO_LANGUAGE}" ] && [ "${DB_STATE}" != "fresh" ]; then
+            odoo -d "${ODOO_DB}" --load-language="${ODOO_LANGUAGE}" ${DBARGS} --stop-after-init --no-http 2>/dev/null || true
+        fi
+        PY="users = env['res.users'].search([])"
+        [ -n "${ODOO_LANGUAGE}" ] && PY="${PY}; users.write({'lang': '${ODOO_LANGUAGE}'})"
+        [ -n "${ODOO_TZ}" ] && PY="${PY}; users.write({'tz': '${ODOO_TZ}'})"
+        if [ -n "${ODOO_COUNTRY}" ]; then
+            PY="${PY}; c = env['res.country'].search([('code','=','${ODOO_COUNTRY}')], limit=1)"
+            PY="${PY}; env['res.company'].search([]).mapped('partner_id').write({'country_id': c.id}) if c else None"
+        fi
+        if [ -n "${ODOO_CURRENCY}" ]; then
+            PY="${PY}; cur = env['res.currency'].with_context(active_test=False).search([('name','=','${ODOO_CURRENCY}')], limit=1)"
+            PY="${PY}; cur.write({'active': True}) if cur else None"
+            PY="${PY}; env['res.company'].search([]).write({'currency_id': cur.id}) if cur else None"
+        fi
+        PY="${PY}; env.cr.commit()"
+        if echo "$PY" | odoo shell -d "${ODOO_DB}" ${DBARGS} --no-http 2>/dev/null; then
+            echo "${LSTAMP}" > "$LFLAG"
+        else
+            echo "[init] WARN: localización falló"
         fi
     fi
 fi
