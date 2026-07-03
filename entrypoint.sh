@@ -70,24 +70,51 @@ if [ -n "${ODOO_DB}" ]; then
     FLAG="/var/lib/odoo/.installed-${ODOO_DB}"
     STAMP="${WANT}|${ODOO_LANGUAGE}|${ODOO_COUNTRY}|${ODOO_TZ}|${ODOO_CURRENCY}"
     PREV="$(cat "$FLAG" 2>/dev/null || echo '')"
+
+    # ¿La BD ya está inicializada? Protege los datos aunque se pierda el flag:
+    # si ya existe, NO se re-inicializa ni se sobrescribe la localización.
+    DB_STATE=$(python3 - "${HOST}" "${PORT:-5432}" "${USER}" "${PASSWORD}" "${ODOO_DB}" <<'PYEOF'
+import sys
+try:
+    import psycopg2
+    host, port, user, pwd, dbname = sys.argv[1:6]
+    conn = psycopg2.connect(host=host, port=port, user=user, password=pwd, dbname="postgres", connect_timeout=10)
+    conn.autocommit = True
+    cur = conn.cursor()
+    cur.execute("select 1 from pg_database where datname=%s", (dbname,))
+    state = "fresh"
+    if cur.fetchone():
+        c2 = psycopg2.connect(host=host, port=port, user=user, password=pwd, dbname=dbname, connect_timeout=10)
+        cur2 = c2.cursor()
+        cur2.execute("select 1 from information_schema.tables where table_name='ir_module_module'")
+        state = "init" if cur2.fetchone() else "fresh"
+    print(state)
+except Exception:
+    print("fresh")
+PYEOF
+)
+
     if [ "${STAMP}" != "$PREV" ]; then
-        echo "[init] BD '${ODOO_DB}': ${WANT} | idioma=${ODOO_LANGUAGE:-en_US} país=${ODOO_COUNTRY:-} tz=${ODOO_TZ:-}"
+        echo "[init] BD '${ODOO_DB}' estado=${DB_STATE} -> instalar: ${WANT}"
+        # -i instala SOLO los módulos que falten; nunca resetea datos existentes.
         if odoo -d "${ODOO_DB}" -i "${WANT}" ${LANG_OPT} ${DBARGS} --stop-after-init --no-http; then
-            # Fija idioma + zona horaria de los usuarios y país de la empresa
-            PY="users = env['res.users'].search([])"
-            [ -n "${ODOO_LANGUAGE}" ] && PY="${PY}; users.write({'lang': '${ODOO_LANGUAGE}'})"
-            [ -n "${ODOO_TZ}" ] && PY="${PY}; users.write({'tz': '${ODOO_TZ}'})"
-            if [ -n "${ODOO_COUNTRY}" ]; then
-                PY="${PY}; c = env['res.country'].search([('code','=','${ODOO_COUNTRY}')], limit=1)"
-                PY="${PY}; env['res.company'].search([]).mapped('partner_id').write({'country_id': c.id}) if c else None"
+            # Localización (idioma/tz/país/moneda) SOLO en BD nueva.
+            if [ "${DB_STATE}" = "fresh" ]; then
+                PY="users = env['res.users'].search([])"
+                [ -n "${ODOO_LANGUAGE}" ] && PY="${PY}; users.write({'lang': '${ODOO_LANGUAGE}'})"
+                [ -n "${ODOO_TZ}" ] && PY="${PY}; users.write({'tz': '${ODOO_TZ}'})"
+                if [ -n "${ODOO_COUNTRY}" ]; then
+                    PY="${PY}; c = env['res.country'].search([('code','=','${ODOO_COUNTRY}')], limit=1)"
+                    PY="${PY}; env['res.company'].search([]).mapped('partner_id').write({'country_id': c.id}) if c else None"
+                fi
+                if [ -n "${ODOO_CURRENCY}" ]; then
+                    PY="${PY}; cur = env['res.currency'].with_context(active_test=False).search([('name','=','${ODOO_CURRENCY}')], limit=1)"
+                    PY="${PY}; cur.write({'active': True}) if cur else None"
+                    PY="${PY}; env['res.company'].search([]).write({'currency_id': cur.id}) if cur else None"
+                fi
+                PY="${PY}; env.cr.commit()"
+                echo "$PY" | odoo shell -d "${ODOO_DB}" ${DBARGS} --no-http 2>/dev/null || true
             fi
-            if [ -n "${ODOO_CURRENCY}" ]; then
-                PY="${PY}; cur = env['res.currency'].with_context(active_test=False).search([('name','=','${ODOO_CURRENCY}')], limit=1)"
-                PY="${PY}; cur.write({'active': True}) if cur else None"
-                PY="${PY}; env['res.company'].search([]).write({'currency_id': cur.id}) if cur else None"
-            fi
-            PY="${PY}; env.cr.commit()"
-            echo "$PY" | odoo shell -d "${ODOO_DB}" ${DBARGS} --no-http 2>/dev/null || true
             echo "${STAMP}" > "$FLAG"
         else
             echo "[init] WARN: la inicialización/instalación falló"
