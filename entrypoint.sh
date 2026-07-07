@@ -63,7 +63,8 @@ fi
 # Se ejecuta en el primer arranque y cada vez que cambie la lista
 # (instalar un módulo ya instalado es un no-op).
 if [ -n "${ODOO_DB}" ]; then
-    WANT="base${ODOO_INSTALL_MODULES:+,${ODOO_INSTALL_MODULES}}"
+    # 'web' SIEMPRE: garantiza el cliente web / login aunque falle otro módulo
+    WANT="base,web${ODOO_INSTALL_MODULES:+,${ODOO_INSTALL_MODULES}}"
     DBARGS="--db_host=${HOST} --db_port=${PORT:-5432} --db_user=${USER} --db_password=${PASSWORD}"
     LANG_OPT=""
     [ -n "${ODOO_LANGUAGE}" ] && LANG_OPT="--load-language=${ODOO_LANGUAGE}"
