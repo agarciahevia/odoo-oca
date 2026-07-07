@@ -1,11 +1,16 @@
 #####################################################################
-# Odoo 18 + OCA (enterprise-like) — imagen reproducible y actualizable
+# Odoo + OCA (enterprise-like) — imagen reproducible y actualizable
 #
-# El conjunto de repos OCA se define en repos.yaml y se descarga en
-# build con git-aggregator. Para actualizar: cambia repos.yaml y
-# vuelve a hacer el deploy en Dokploy (rebuild).
+# La VERSIÓN se elige con el build-arg ODOO_VERSION (18.0, 19.0, ...).
+# repos.yaml se escribe con ramas 18.0 y se reescriben a ODOO_VERSION
+# en el build (sed), así el mismo repos.yaml sirve para cualquier versión.
 #####################################################################
-FROM odoo:18.0
+ARG ODOO_VERSION=18.0
+FROM odoo:${ODOO_VERSION}
+
+# Re-declarar el ARG tras el FROM para poder usarlo abajo
+ARG ODOO_VERSION=18.0
+ENV ODOO_VERSION=${ODOO_VERSION}
 
 USER root
 
@@ -24,10 +29,11 @@ RUN apt-get update \
     && pip3 install --break-system-packages --no-cache-dir git-aggregator \
     && rm -rf /var/lib/apt/lists/*
 
-# Descarga de repos OCA (rama 18.0) según el manifiesto
+# Descarga de repos OCA según el manifiesto (ramas reescritas a ODOO_VERSION)
 WORKDIR /opt/oca
 COPY repos.yaml /opt/oca/repos.yaml
-RUN gitaggregate -c /opt/oca/repos.yaml -j 4
+RUN sed -i "s/18\.0/${ODOO_VERSION}/g" /opt/oca/repos.yaml \
+    && gitaggregate -c /opt/oca/repos.yaml -j 4
 
 # Dependencias Python extra que necesitan varios módulos OCA / l10n_es
 COPY requirements.txt /opt/oca/requirements.txt
