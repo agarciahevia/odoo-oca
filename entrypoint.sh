@@ -18,6 +18,15 @@ if [ -n "${ODOO_WORKERS}" ]; then
     sed -i "s|^workers.*|workers = ${ODOO_WORKERS}|" "$CONF"
 fi
 
+# Gestor de BD accesible o no (list_db). False = /web/database/* deshabilitado.
+if [ -n "${ODOO_LIST_DB}" ]; then
+    if grep -q '^list_db' "$CONF"; then
+        sed -i "s|^list_db.*|list_db = ${ODOO_LIST_DB}|" "$CONF"
+    else
+        sed -i "/^\[options\]/a list_db = ${ODOO_LIST_DB}" "$CONF"
+    fi
+fi
+
 # --- Addons a medida desde uno o VARIOS repos Git --------------------
 # CUSTOM_ADDONS = specs separados por espacio; cada uno: url|branch|token
 #   (branch y token opcionales). Cada repo se clona en su carpeta y se
