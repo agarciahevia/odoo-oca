@@ -124,6 +124,11 @@ PYEOF
             PY="${PY}; cur.write({'active': True}) if cur else None"
             PY="${PY}; env['res.company'].search([]).write({'currency_id': cur.id}) if cur else None"
         fi
+        # Solo en BD NUEVA: fija la contraseña del admin (que NO sea 'admin')
+        if [ "${DB_STATE}" = "fresh" ] && [ -n "${ODOO_ADMIN_PASSWORD}" ]; then
+            PY="${PY}; a = env.ref('base.user_admin', raise_if_not_found=False)"
+            PY="${PY}; a.write({'password': '${ODOO_ADMIN_PASSWORD}'}) if a else None"
+        fi
         PY="${PY}; env.cr.commit()"
         if echo "$PY" | odoo shell -d "${ODOO_DB}" ${DBARGS} --no-http 2>/dev/null; then
             echo "${LSTAMP}" > "$LFLAG"
