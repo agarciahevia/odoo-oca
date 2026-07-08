@@ -60,11 +60,25 @@ if [ -n "${SPECS}" ]; then
                 echo "[addons] ${name} ya presente (sin actualizar; CUSTOM_ADDONS_UPDATE vacío)"
             fi
         else
+            # Limpia restos de intentos fallidos (carpeta vacía sin .git en el volumen)
+            [ -d "${dest}" ] && [ ! -d "${dest}/.git" ] && rm -rf "${dest}"
             echo "[addons] clonando ${name}#${repo_branch}"
-            git clone --depth 1 -b "${repo_branch}" "${aurl}" "${dest}" \
-                || echo "[addons] WARN: no se pudo clonar ${name} (¿token/rama?)"
+            if ! git clone --depth 1 -b "${repo_branch}" "${aurl}" "${dest}" 2>/tmp/gc_err; then
+                err="$(cat /tmp/gc_err 2>/dev/null)"
+                [ -n "${repo_token}" ] && err="${err//${repo_token}/***}"
+                echo "[addons] WARN: fallo clonando ${name}#${repo_branch}: ${err}"
+                rm -rf "${dest}"
+                echo "[addons] reintentando ${name} con la rama por defecto…"
+                if ! git clone --depth 1 "${aurl}" "${dest}" 2>/tmp/gc_err; then
+                    err="$(cat /tmp/gc_err 2>/dev/null)"
+                    [ -n "${repo_token}" ] && err="${err//${repo_token}/***}"
+                    echo "[addons] WARN: no se pudo clonar ${name}: ${err}"
+                    rm -rf "${dest}"
+                fi
+            fi
         fi
-        [ -d "${dest}" ] && EXTRA_DIRS="${EXTRA_DIRS},${dest}"
+        # Solo se añade al addons_path si es un repo real (evita 'invalid directory')
+        [ -d "${dest}/.git" ] && EXTRA_DIRS="${EXTRA_DIRS},${dest}"
     done
     # Reconstruye addons_path = base + carpetas de los repos a medida
     if [ -n "${EXTRA_DIRS}" ] && [ -f /etc/odoo/.addons_base ]; then
