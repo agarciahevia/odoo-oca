@@ -80,6 +80,14 @@ if [ -n "${SPECS}" ]; then
         # Solo se añade al addons_path si es un repo real (evita 'invalid directory')
         [ -d "${dest}/.git" ] && EXTRA_DIRS="${EXTRA_DIRS},${dest}"
     done
+    # --- Diagnóstico: qué hay realmente en /mnt/custom-addons -------------
+    echo "[addons] === diagnóstico /mnt/custom-addons (id: $(id -un 2>/dev/null)) ==="
+    ls -la /mnt/custom-addons 2>&1 | sed 's/^/[addons] /'
+    for d in /mnt/custom-addons/*/ ; do
+        [ -d "$d" ] || continue
+        echo "[addons] ${d} manifest_raiz=$([ -f "${d}__manifest__.py" ] && echo SI || echo no) hijos=[$(ls "$d" 2>/dev/null | tr '\n' ' ')]"
+    done
+    echo "[addons] === fin diagnóstico ==="
     # Reconstruye addons_path = base + carpetas de los repos a medida
     if [ -n "${EXTRA_DIRS}" ] && [ -f /etc/odoo/.addons_base ]; then
         BASE="$(cat /etc/odoo/.addons_base)"
