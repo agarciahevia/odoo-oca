@@ -47,11 +47,18 @@ if [ -n "${SPECS}" ]; then
         aurl="${repo_url}"
         [ -n "${repo_token}" ] && aurl="$(echo "${repo_url}" | sed -E "s#https://#https://${repo_token}@#")"
         if [ -d "${dest}/.git" ]; then
-            echo "[addons] actualizando ${name}#${repo_branch}"
-            git -C "${dest}" remote set-url origin "${aurl}"
-            git -C "${dest}" fetch --depth 1 origin "${repo_branch}" \
-                && git -C "${dest}" reset --hard "origin/${repo_branch}" \
-                || echo "[addons] WARN: no se pudo actualizar ${name}"
+            # Ya está clonado (volumen persistido). Solo re-descarga si se pide
+            # explícitamente (CUSTOM_ADDONS_UPDATE=1); evita re-bajar enterprise
+            # (~40k ficheros) y demás en cada arranque.
+            if [ -n "${CUSTOM_ADDONS_UPDATE}" ]; then
+                echo "[addons] actualizando ${name}#${repo_branch}"
+                git -C "${dest}" remote set-url origin "${aurl}"
+                git -C "${dest}" fetch --depth 1 origin "${repo_branch}" \
+                    && git -C "${dest}" reset --hard "origin/${repo_branch}" \
+                    || echo "[addons] WARN: no se pudo actualizar ${name}"
+            else
+                echo "[addons] ${name} ya presente (sin actualizar; CUSTOM_ADDONS_UPDATE vacío)"
+            fi
         else
             echo "[addons] clonando ${name}#${repo_branch}"
             git clone --depth 1 -b "${repo_branch}" "${aurl}" "${dest}" \
