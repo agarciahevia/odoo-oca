@@ -48,6 +48,13 @@ RUN F="repos-${ODOO_VERSION}.yaml"; \
 COPY requirements.txt /opt/oca/requirements.txt
 RUN pip3 install --no-cache-dir -r /opt/oca/requirements.txt
 
+# Además, instala los requirements.txt que traen los propios repos OCA (cada uno
+# lista las external_dependencies de sus módulos, p.ej. pycountry). Así no hay que
+# ir dependencia a dependencia. Tolera fallos por repo (pines raros) sin romper el build.
+RUN for r in $(find /opt/oca -mindepth 2 -maxdepth 2 -name requirements.txt); do \
+        echo "[deps] $r"; pip3 install --no-cache-dir -r "$r" || echo "[deps] WARN: falló $r"; \
+    done
+
 # Módulos vendorizados (terceros no-OCA) específicos por versión: vendor/<ver>/<modulo>.
 # Se copia solo la carpeta de la versión que se compila a /opt/oca/vendor-extra,
 # que el paso de addons_path de abajo recoge automáticamente.
