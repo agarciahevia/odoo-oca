@@ -45,15 +45,17 @@ RUN F="repos-${ODOO_VERSION}.yaml"; \
     sed -i "s/18\.0/${ODOO_VERSION}/g" "/opt/oca/$F" && \
     gitaggregate -c "/opt/oca/$F" -j 4
 
-# Fija cryptography/pyOpenSSL a la versión del base image para TODOS los installs
-# (incluidas deps TRANSITIVAS de los requirements OCA). Subir cryptography rompe el
-# pyOpenSSL del base ("module 'lib' has no attribute 'GEN_EMAIL'" -> base no carga) y
-# compilar cryptography nuevo en bullseye (Odoo 16) necesita Rust. El par del base ya
-# es compatible; el constraints file impide que pip lo cambie por debajo.
-RUN CV=$(python3 -c "import cryptography,sys;sys.stdout.write(cryptography.__version__)" 2>/dev/null); \
-    PV=$(python3 -c "import OpenSSL,sys;sys.stdout.write(OpenSSL.__version__)" 2>/dev/null); \
+# Fija cryptography/pyOpenSSL para TODOS los installs (incluidas deps TRANSITIVAS de
+# los requirements OCA). cryptography==3.4.8 es el punto dulce en Odoo 16 (bullseye):
+#  - tiene _lib.GEN_EMAIL -> el pyOpenSSL viejo del base image sigue funcionando
+#    (subir cryptography por encima de ~35 lo rompe: "module 'lib' has no attribute
+#     GEN_EMAIL" -> base no carga)
+#  - satisface requests-pkcs12>=3.4.7 y demás deps de l10n_es (la 3.3.2 del base no)
+#  - tiene wheel manylinux2014 -> no compila -> no necesita Rust
+# pyOpenSSL se fija a la versión del base image (detectada) para que nada la cambie.
+RUN PV=$(python3 -c "import OpenSSL,sys;sys.stdout.write(OpenSSL.__version__)" 2>/dev/null); \
     : > /opt/oca/constraints.txt; \
-    [ -n "$CV" ] && echo "cryptography==$CV" >> /opt/oca/constraints.txt; \
+    echo "cryptography==3.4.8" >> /opt/oca/constraints.txt; \
     [ -n "$PV" ] && echo "pyOpenSSL==$PV" >> /opt/oca/constraints.txt; \
     echo "== constraints =="; cat /opt/oca/constraints.txt
 
