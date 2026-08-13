@@ -31,9 +31,13 @@ RUN apt-get update \
 
 # Descarga de repos OCA según el manifiesto (ramas reescritas a ODOO_VERSION)
 WORKDIR /opt/oca
-COPY repos.yaml /opt/oca/repos.yaml
-RUN sed -i "s/18\.0/${ODOO_VERSION}/g" /opt/oca/repos.yaml \
-    && gitaggregate -c /opt/oca/repos.yaml -j 4
+# repos por versión: usa repos-<ver>.yaml (p.ej. commits pineados en 16.0) si existe,
+# si no el repos.yaml genérico (18/19, ramas reescritas a ODOO_VERSION).
+COPY repos*.yaml /opt/oca/
+RUN F="repos-${ODOO_VERSION}.yaml"; \
+    [ -f "/opt/oca/$F" ] || F="repos.yaml"; \
+    sed -i "s/18\.0/${ODOO_VERSION}/g" "/opt/oca/$F" && \
+    gitaggregate -c "/opt/oca/$F" -j 4
 
 # Dependencias Python extra que necesitan varios módulos OCA / l10n_es
 COPY requirements.txt /opt/oca/requirements.txt
