@@ -49,16 +49,15 @@ COPY requirements.txt /opt/oca/requirements.txt
 RUN pip3 install --no-cache-dir -r /opt/oca/requirements.txt
 
 # Además, instala los requirements.txt que traen los propios repos OCA (cada uno
-# lista las external_dependencies de sus módulos, p.ej. pycountry). Así no hay que
-# ir dependencia a dependencia. Tolera fallos por repo (pines raros) sin romper el build.
+# lista las external_dependencies de sus módulos, p.ej. pycountry). Así no hay que ir
+# dependencia a dependencia. Se EXCLUYEN cryptography/pyOpenSSL: subirlos rompe el
+# pyOpenSSL del base image ("module 'lib' has no attribute 'GEN_EMAIL'" -> base no
+# carga) y compilar cryptography nuevo en bullseye (Odoo 16) necesita Rust -> build
+# roto. El par del base image ya es compatible; se deja tal cual.
 RUN for r in $(find /opt/oca -mindepth 2 -maxdepth 2 -name requirements.txt); do \
-        echo "[deps] $r"; pip3 install --no-cache-dir -r "$r" || echo "[deps] WARN: falló $r"; \
+        grep -ivE '^(cryptography|pyopenssl)' "$r" > /tmp/ocareq.txt 2>/dev/null || true; \
+        echo "[deps] $r"; pip3 install --no-cache-dir -r /tmp/ocareq.txt || echo "[deps] WARN: falló $r"; \
     done
-
-# Al subir 'cryptography' (por los requirements de arriba), el pyOpenSSL del base
-# image queda desalineado -> "module 'lib' has no attribute 'GEN_EMAIL'" y 'base'
-# no carga. Realinea pyOpenSSL a la cryptography instalada. DEBE ir el último.
-RUN pip3 install --no-cache-dir -U pyOpenSSL
 
 # Módulos vendorizados (terceros no-OCA) específicos por versión: vendor/<ver>/<modulo>.
 # Se copia solo la carpeta de la versión que se compila a /opt/oca/vendor-extra,
