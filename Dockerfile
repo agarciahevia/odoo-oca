@@ -32,6 +32,7 @@ RUN apt-get update \
         fontconfig \
         fonts-liberation \
         default-jdk-headless \
+        gosu \
     && pip3 install --no-cache-dir git-aggregator \
     && rm -rf /var/lib/apt/lists/*
 
@@ -45,18 +46,13 @@ RUN F="repos-${ODOO_VERSION}.yaml"; \
     sed -i "s/18\.0/${ODOO_VERSION}/g" "/opt/oca/$F" && \
     gitaggregate -c "/opt/oca/$F" -j 4
 
-# Fija cryptography/pyOpenSSL para TODOS los installs (incluidas deps TRANSITIVAS de
-# los requirements OCA). cryptography==3.4.8 es el punto dulce en Odoo 16 (bullseye):
-#  - tiene _lib.GEN_EMAIL -> el pyOpenSSL viejo del base image sigue funcionando
-#    (subir cryptography por encima de ~35 lo rompe: "module 'lib' has no attribute
-#     GEN_EMAIL" -> base no carga)
-#  - satisface requests-pkcs12>=3.4.7 y demás deps de l10n_es (la 3.3.2 del base no)
-#  - tiene wheel manylinux2014 -> no compila -> no necesita Rust
-# pyOpenSSL se fija a la versión del base image (detectada) para que nada la cambie.
-RUN PV=$(python3 -c "import OpenSSL,sys;sys.stdout.write(OpenSSL.__version__)" 2>/dev/null); \
-    : > /opt/oca/constraints.txt; \
-    echo "cryptography==3.4.8" >> /opt/oca/constraints.txt; \
-    [ -n "$PV" ] && echo "pyOpenSSL==$PV" >> /opt/oca/constraints.txt; \
+# Fija cryptography/pyOpenSSL para TODOS los installs (incl. deps TRANSITIVAS de los
+# requirements OCA). Son EXACTAMENTE el par que fija Odoo 16 (requirements.txt oficial,
+# python<3.12): pyopenssl 20.0.1 + cryptography 3.4.8 son compatibles entre sí. Subir
+# cualquiera de los dos rompe 'base' (GEN_EMAIL con crypto nueva, o "deprecated() got
+# unexpected keyword 'name'" con pyOpenSSL nuevo + crypto vieja). 3.4.8 además satisface
+# requests-pkcs12>=3.4.7 (l10n_es) y tiene wheel manylinux (no compila, no Rust).
+RUN printf 'cryptography==3.4.8\npyOpenSSL==20.0.1\n' > /opt/oca/constraints.txt; \
     echo "== constraints =="; cat /opt/oca/constraints.txt
 
 # Dependencias Python extra que necesitan varios módulos OCA / l10n_es
@@ -100,10 +96,12 @@ RUN ADDONS=$(find /opt/oca -mindepth 1 -maxdepth 1 -type d | sort | paste -sd, -
     && mkdir -p /mnt/extra-addons /mnt/custom-addons \
     && chown -R odoo:odoo /opt/oca /mnt/extra-addons /mnt/custom-addons /etc/odoo
 
-# Entrypoint propio: inyecta la master password y delega en el oficial
+# Entrypoint propio: arranca como ROOT (para corregir permisos del volumen
+# /var/lib/odoo, que Dokploy monta como root) y baja a 'odoo' con gosu.
 COPY entrypoint.sh /opt/entrypoint.sh
 RUN chmod +x /opt/entrypoint.sh
 
-USER odoo
+# Sin 'USER odoo': el entrypoint corre como root, hace chown del volumen y
+# re-ejecuta como odoo (gosu). Así las sesiones/filestore son escribibles.
 ENTRYPOINT ["/opt/entrypoint.sh"]
 CMD ["odoo"]

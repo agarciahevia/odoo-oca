@@ -1,6 +1,15 @@
 #!/bin/bash
 set -e
 
+# Si arrancamos como root: corrige permisos del volumen /var/lib/odoo (Dokploy lo
+# monta como root -> Odoo no puede escribir sesiones/filestore) y re-ejecuta este
+# mismo script como 'odoo'. El resto corre exactamente igual, pero como usuario odoo.
+if [ "$(id -u)" = "0" ]; then
+    mkdir -p /var/lib/odoo /mnt/extra-addons /mnt/custom-addons
+    chown -R odoo:odoo /var/lib/odoo /mnt/extra-addons /mnt/custom-addons 2>/dev/null || true
+    exec gosu odoo "$0" "$@"
+fi
+
 CONF=/etc/odoo/odoo.conf
 
 # Inyecta la master password (admin_passwd) desde la variable de entorno,
