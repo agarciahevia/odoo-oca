@@ -79,6 +79,15 @@ RUN if [ -d "/opt/vendor/${ODOO_VERSION}" ]; then \
         cp -r /opt/vendor/${ODOO_VERSION}/. /opt/oca/vendor-extra/ ; \
     fi
 
+# Odoo 16 corre en Python 3.9, que NO evalúa anotaciones PEP 604 ("int | list[int]")
+# en runtime -> módulos OCA (tip 16.0) que las usan rompen al importar
+# (TypeError: unsupported operand type(s) for |). Se les añade
+# 'from __future__ import annotations' (hace las anotaciones perezosas: no se evalúan).
+# Es inocuo para Odoo y para el resto del código (solo afecta a las anotaciones).
+RUN grep -rlE '(: |-> )[A-Za-z_][A-Za-z0-9_. ]*\|' /opt/oca --include=*.py 2>/dev/null | while read -r f; do \
+        grep -q 'from __future__ import annotations' "$f" || sed -i '1i from __future__ import annotations' "$f"; \
+    done; true
+
 # Config base de Odoo (sin addons_path; se genera abajo dinámicamente)
 COPY odoo.conf /etc/odoo/odoo.conf
 
