@@ -55,6 +55,11 @@ RUN for r in $(find /opt/oca -mindepth 2 -maxdepth 2 -name requirements.txt); do
         echo "[deps] $r"; pip3 install --no-cache-dir -r "$r" || echo "[deps] WARN: falló $r"; \
     done
 
+# Al subir 'cryptography' (por los requirements de arriba), el pyOpenSSL del base
+# image queda desalineado -> "module 'lib' has no attribute 'GEN_EMAIL'" y 'base'
+# no carga. Realinea pyOpenSSL a la cryptography instalada. DEBE ir el último.
+RUN pip3 install --no-cache-dir -U pyOpenSSL
+
 # Módulos vendorizados (terceros no-OCA) específicos por versión: vendor/<ver>/<modulo>.
 # Se copia solo la carpeta de la versión que se compila a /opt/oca/vendor-extra,
 # que el paso de addons_path de abajo recoge automáticamente.
