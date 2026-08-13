@@ -129,9 +129,13 @@ PYEOF
 )
 
     # --- Módulos: instala si es BD nueva o cambió la lista (nunca resetea) ---
+    # ODOO_SKIP_FRESH_INIT=1 evita CREAR la BD si no existe (modo import/migración:
+    # se espera un restore; no queremos que el entrypoint cree una BD por defecto).
     MFLAG="/var/lib/odoo/.modules-${ODOO_DB}"
     MPREV="$(cat "$MFLAG" 2>/dev/null || echo '')"
-    if [ "${DB_STATE}" = "fresh" ] || [ "${WANT}" != "$MPREV" ]; then
+    if [ "${DB_STATE}" = "fresh" ] && [ -n "${ODOO_SKIP_FRESH_INIT}" ]; then
+        echo "[init] BD '${ODOO_DB}' no existe y ODOO_SKIP_FRESH_INIT=1 -> no se crea (esperando restore)"
+    elif [ "${DB_STATE}" = "fresh" ] || [ "${WANT}" != "$MPREV" ]; then
         echo "[init] BD '${ODOO_DB}' estado=${DB_STATE} -> módulos: ${WANT}"
         if odoo -d "${ODOO_DB}" -i "${WANT}" ${LANG_OPT} ${DBARGS} --stop-after-init --no-http; then
             echo "${WANT}" > "$MFLAG"
@@ -140,11 +144,30 @@ PYEOF
         fi
     fi
 
+    # --- Update de módulos (sincroniza esquema) si se pide ODOO_UPDATE ---
+    # Necesario tras restaurar una BD cuyo código OCA es MÁS NUEVO (faltan columnas,
+    # p.ej. res_company.keep_partner_bank_without_payment_mode) o al migrar de versión.
+    # ODOO_UPDATE=all (o lista de módulos). Se ejecuta una vez por valor (flag).
+    if [ -n "${ODOO_UPDATE}" ] && [ "${DB_STATE}" = "init" ]; then
+        UFLAG="/var/lib/odoo/.updated-${ODOO_DB}"
+        UPREV="$(cat "$UFLAG" 2>/dev/null || echo '')"
+        if [ "${ODOO_UPDATE}" != "$UPREV" ]; then
+            echo "[init] sincronizando esquema: odoo -u ${ODOO_UPDATE} (puede tardar varios minutos)"
+            if odoo -d "${ODOO_DB}" -u "${ODOO_UPDATE}" ${DBARGS} --stop-after-init --no-http; then
+                echo "${ODOO_UPDATE}" > "$UFLAG"
+            else
+                echo "[init] WARN: update (-u ${ODOO_UPDATE}) falló"
+            fi
+        fi
+    fi
+
     # --- Localización: en BD nueva o cuando cambien idioma/país/tz/moneda ---
+    # En modo import/migración (ODOO_SKIP_FRESH_INIT) NO se toca: los ajustes vienen
+    # del backup restaurado y son los que mandan (no forzar lang/país/moneda).
     LSTAMP="${ODOO_LANGUAGE}|${ODOO_COUNTRY}|${ODOO_TZ}|${ODOO_CURRENCY}"
     LFLAG="/var/lib/odoo/.locale-${ODOO_DB}"
     LPREV="$(cat "$LFLAG" 2>/dev/null || echo '')"
-    if [ "${DB_STATE}" = "fresh" ] || [ "${LSTAMP}" != "$LPREV" ]; then
+    if [ -z "${ODOO_SKIP_FRESH_INIT}" ] && { [ "${DB_STATE}" = "fresh" ] || [ "${LSTAMP}" != "$LPREV" ]; }; then
         echo "[init] localización -> ${LSTAMP}"
         # Asegura que el idioma está cargado/activo (en BD ya existente)
         if [ -n "${ODOO_LANGUAGE}" ] && [ "${DB_STATE}" != "fresh" ]; then
