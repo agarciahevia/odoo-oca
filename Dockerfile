@@ -48,6 +48,15 @@ RUN F="repos-${ODOO_VERSION}.yaml"; \
 COPY requirements.txt /opt/oca/requirements.txt
 RUN pip3 install --no-cache-dir -r /opt/oca/requirements.txt
 
+# Módulos vendorizados (terceros no-OCA) específicos por versión: vendor/<ver>/<modulo>.
+# Se copia solo la carpeta de la versión que se compila a /opt/oca/vendor-extra,
+# que el paso de addons_path de abajo recoge automáticamente.
+COPY vendor/ /opt/vendor/
+RUN if [ -d "/opt/vendor/${ODOO_VERSION}" ]; then \
+        mkdir -p /opt/oca/vendor-extra && \
+        cp -r /opt/vendor/${ODOO_VERSION}/. /opt/oca/vendor-extra/ ; \
+    fi
+
 # Config base de Odoo (sin addons_path; se genera abajo dinámicamente)
 COPY odoo.conf /etc/odoo/odoo.conf
 
