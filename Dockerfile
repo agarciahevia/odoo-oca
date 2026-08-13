@@ -66,6 +66,11 @@ RUN for r in $(find /opt/oca -mindepth 2 -maxdepth 2 -name requirements.txt); do
         echo "[deps] $r"; pip3 install --no-cache-dir -c /opt/oca/constraints.txt -r "$r" || echo "[deps] WARN: falló $r"; \
     done
 
+# DEFINITIVO: fuerza el par EXACTO de Odoo 16 al final. Un constraints impide subirlos
+# pero NO baja uno que ya venga alto en el base; este install explícito SÍ downgradea.
+# pyopenssl 20.0.1 (puro python) + cryptography 3.4.8 (wheel) -> sin compilar, sin Rust.
+RUN pip3 install --no-cache-dir --force-reinstall --no-deps cryptography==3.4.8 pyOpenSSL==20.0.1
+
 # Módulos vendorizados (terceros no-OCA) específicos por versión: vendor/<ver>/<modulo>.
 # Se copia solo la carpeta de la versión que se compila a /opt/oca/vendor-extra,
 # que el paso de addons_path de abajo recoge automáticamente.
