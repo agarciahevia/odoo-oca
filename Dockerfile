@@ -24,6 +24,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         git \
         python3-pip \
+        python3-dev \
         build-essential \
         libsasl2-dev \
         libldap2-dev \
