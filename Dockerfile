@@ -12,6 +12,11 @@ FROM odoo:${ODOO_VERSION}
 ARG ODOO_VERSION=18.0
 ENV ODOO_VERSION=${ODOO_VERSION}
 
+# pip nuevo (bookworm, Odoo 18/19) exige --break-system-packages; via env se
+# aplica sin pasar el flag. pip viejo (bullseye, Odoo 16) lo ignora y como no
+# tiene PEP-668 instala igual. Así el mismo Dockerfile sirve para 16 y 18/19.
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
+
 USER root
 
 # Herramientas de build + git-aggregator
@@ -26,7 +31,7 @@ RUN apt-get update \
         fontconfig \
         fonts-liberation \
         default-jdk-headless \
-    && pip3 install --break-system-packages --no-cache-dir git-aggregator \
+    && pip3 install --no-cache-dir git-aggregator \
     && rm -rf /var/lib/apt/lists/*
 
 # Descarga de repos OCA según el manifiesto (ramas reescritas a ODOO_VERSION)
@@ -41,7 +46,7 @@ RUN F="repos-${ODOO_VERSION}.yaml"; \
 
 # Dependencias Python extra que necesitan varios módulos OCA / l10n_es
 COPY requirements.txt /opt/oca/requirements.txt
-RUN pip3 install --break-system-packages --no-cache-dir -r /opt/oca/requirements.txt
+RUN pip3 install --no-cache-dir -r /opt/oca/requirements.txt
 
 # Config base de Odoo (sin addons_path; se genera abajo dinámicamente)
 COPY odoo.conf /etc/odoo/odoo.conf
