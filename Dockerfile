@@ -45,19 +45,27 @@ RUN F="repos-${ODOO_VERSION}.yaml"; \
     sed -i "s/18\.0/${ODOO_VERSION}/g" "/opt/oca/$F" && \
     gitaggregate -c "/opt/oca/$F" -j 4
 
+# Fija cryptography/pyOpenSSL a la versión del base image para TODOS los installs
+# (incluidas deps TRANSITIVAS de los requirements OCA). Subir cryptography rompe el
+# pyOpenSSL del base ("module 'lib' has no attribute 'GEN_EMAIL'" -> base no carga) y
+# compilar cryptography nuevo en bullseye (Odoo 16) necesita Rust. El par del base ya
+# es compatible; el constraints file impide que pip lo cambie por debajo.
+RUN CV=$(python3 -c "import cryptography,sys;sys.stdout.write(cryptography.__version__)" 2>/dev/null); \
+    PV=$(python3 -c "import OpenSSL,sys;sys.stdout.write(OpenSSL.__version__)" 2>/dev/null); \
+    : > /opt/oca/constraints.txt; \
+    [ -n "$CV" ] && echo "cryptography==$CV" >> /opt/oca/constraints.txt; \
+    [ -n "$PV" ] && echo "pyOpenSSL==$PV" >> /opt/oca/constraints.txt; \
+    echo "== constraints =="; cat /opt/oca/constraints.txt
+
 # Dependencias Python extra que necesitan varios módulos OCA / l10n_es
 COPY requirements.txt /opt/oca/requirements.txt
-RUN pip3 install --no-cache-dir -r /opt/oca/requirements.txt
+RUN pip3 install --no-cache-dir -c /opt/oca/constraints.txt -r /opt/oca/requirements.txt
 
-# Además, instala los requirements.txt que traen los propios repos OCA (cada uno
-# lista las external_dependencies de sus módulos, p.ej. pycountry). Así no hay que ir
-# dependencia a dependencia. Se EXCLUYEN cryptography/pyOpenSSL: subirlos rompe el
-# pyOpenSSL del base image ("module 'lib' has no attribute 'GEN_EMAIL'" -> base no
-# carga) y compilar cryptography nuevo en bullseye (Odoo 16) necesita Rust -> build
-# roto. El par del base image ya es compatible; se deja tal cual.
+# Además, instala los requirements.txt que traen los propios repos OCA (external_
+# dependencies de sus módulos: pycountry, schwifty, etc.). Con el constraints, pip
+# NO sube cryptography/pyOpenSSL ni por deps transitivas. Tolera fallos por repo.
 RUN for r in $(find /opt/oca -mindepth 2 -maxdepth 2 -name requirements.txt); do \
-        grep -ivE '^(cryptography|pyopenssl)' "$r" > /tmp/ocareq.txt 2>/dev/null || true; \
-        echo "[deps] $r"; pip3 install --no-cache-dir -r /tmp/ocareq.txt || echo "[deps] WARN: falló $r"; \
+        echo "[deps] $r"; pip3 install --no-cache-dir -c /opt/oca/constraints.txt -r "$r" || echo "[deps] WARN: falló $r"; \
     done
 
 # Módulos vendorizados (terceros no-OCA) específicos por versión: vendor/<ver>/<modulo>.
