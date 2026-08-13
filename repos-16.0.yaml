@@ -1,176 +1,210 @@
-# repos-16.0.yaml — réplica Mecan (Odoo 16.0). 40 repos OCA, commit pineado por repo.
+# repos-16.0.yaml — réplica Mecan (Odoo 16.0). 40 repos OCA, punta de rama 16.0.
 # git-aggregator clona cada repo en /opt/oca/<name> (el Dockerfile lo mete al addons_path).
-# Sin shallow a propósito: se fetchea un commit histórico concreto.
 #
-# ⚠ 5 repos tenían módulos a commits DISTINTOS en el servidor viejo. Un checkout es
-# un solo estado, así que van pineados al commit dominante; revisar la versión de sus
-# módulos tras el arranque (o clonar por grupos si alguno falla):
-#   account-financial-reporting  -> 63312bab13 (revisar: account_financial_report a7afb37784,
-#                                    account_financial_report_sale 730ff967b0, account_tax_balance 75af1138b7)
-#   account-invoicing            -> 0e2f4d622b (revisar: account_invoice_pricelist b4cfae9eca,
-#                                    account_invoice_section_sale_order ad87c4eafc)
-#   account-reconcile            -> 30e501bf0e (revisar: account_statement_base 24e0d4104e)
-#   l10n-spain                   -> 4b0f92a812 (revisar: l10n_es_aeat 6609532751, l10n_es_dua_igic baf489c36c,
-#                                    l10n_es_facturae 5476efdce8, l10n_es_vat_book b569d9f07b, l10n_es_vat_book_igic 82189590bf)
-#   reporting-engine             -> cb3c9ae852 (revisar: report_xlsx 8261a11102, report_xml c51cebf492)
+# NOTA: antes iba pineado por commit, pero GitHub NO sirve fetch de un SHA suelto que
+# no sea punta de rama (git-aggregator hace `git fetch oca <sha>` -> couldn't find remote
+# ref -> build falla). Para el objetivo (replicar Mecan y migrar a 17/18) no hace falta el
+# commit exacto: el dump lleva los datos, el código solo debe existir y ser 16.0-compatible.
+# Se usa la punta de 16.0 (más robusto y mejor base para migrar). Los SHAs originales del
+# servidor viejo quedan en el historial git (commit anterior) por si hiciera falta.
 
 /opt/oca/account-analytic:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/account-analytic.git}
   target: oca 16.0
-  merges: [oca 9f850f2051]
+  merges: [oca 16.0]
 /opt/oca/account-closing:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/account-closing.git}
   target: oca 16.0
-  merges: [oca c4327a6573]
+  merges: [oca 16.0]
 /opt/oca/account-financial-reporting:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/account-financial-reporting.git}
   target: oca 16.0
-  merges: [oca 63312bab13]
+  merges: [oca 16.0]
 /opt/oca/account-financial-tools:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/account-financial-tools.git}
   target: oca 16.0
-  merges: [oca 0db0ca1b2d]
+  merges: [oca 16.0]
 /opt/oca/account-invoice-reporting:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/account-invoice-reporting.git}
   target: oca 16.0
-  merges: [oca f46edf9936]
+  merges: [oca 16.0]
 /opt/oca/account-invoicing:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/account-invoicing.git}
   target: oca 16.0
-  merges: [oca 0e2f4d622b]
+  merges: [oca 16.0]
 /opt/oca/account-payment:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/account-payment.git}
   target: oca 16.0
-  merges: [oca ad356f06dc]
+  merges: [oca 16.0]
 /opt/oca/account-reconcile:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/account-reconcile.git}
   target: oca 16.0
-  merges: [oca 30e501bf0e]
+  merges: [oca 16.0]
 /opt/oca/bank-payment:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/bank-payment.git}
   target: oca 16.0
-  merges: [oca 5ac37b6c55]
+  merges: [oca 16.0]
 /opt/oca/bank-statement-import:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/bank-statement-import.git}
   target: oca 16.0
-  merges: [oca 3a1a23c019]
+  merges: [oca 16.0]
 /opt/oca/community-data-files:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/community-data-files.git}
   target: oca 16.0
-  merges: [oca 654ff86212]
+  merges: [oca 16.0]
 /opt/oca/contract:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/contract.git}
   target: oca 16.0
-  merges: [oca 868e338fc9]
+  merges: [oca 16.0]
 /opt/oca/crm:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/crm.git}
   target: oca 16.0
-  merges: [oca dd4035ab47]
+  merges: [oca 16.0]
 /opt/oca/dms:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/dms.git}
   target: oca 16.0
-  merges: [oca f14d8dc0e3]
+  merges: [oca 16.0]
 /opt/oca/fleet:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/fleet.git}
   target: oca 16.0
-  merges: [oca 3f88e12bbb]
+  merges: [oca 16.0]
 /opt/oca/hr:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/hr.git}
   target: oca 16.0
-  merges: [oca f2292caaaa]
+  merges: [oca 16.0]
 /opt/oca/hr-attendance:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/hr-attendance.git}
   target: oca 16.0
-  merges: [oca 8d61293cc7]
+  merges: [oca 16.0]
 /opt/oca/hr-holidays:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/hr-holidays.git}
   target: oca 16.0
-  merges: [oca 6fb3fec4b0]
+  merges: [oca 16.0]
 /opt/oca/knowledge:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/knowledge.git}
   target: oca 16.0
-  merges: [oca ad15036bd6]
+  merges: [oca 16.0]
 /opt/oca/l10n-spain:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/l10n-spain.git}
   target: oca 16.0
-  merges: [oca 4b0f92a812]
+  merges: [oca 16.0]
 /opt/oca/maintenance:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/maintenance.git}
   target: oca 16.0
-  merges: [oca f1f3387b3b]
+  merges: [oca 16.0]
 /opt/oca/management-system:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/management-system.git}
   target: oca 16.0
-  merges: [oca fa694c0eb6]
+  merges: [oca 16.0]
 /opt/oca/manufacture:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/manufacture.git}
   target: oca 16.0
-  merges: [oca 8b43847e2e]
+  merges: [oca 16.0]
 /opt/oca/mis-builder:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/mis-builder.git}
   target: oca 16.0
-  merges: [oca 2bd9f3ba5f]
+  merges: [oca 16.0]
 /opt/oca/multi-company:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/multi-company.git}
   target: oca 16.0
-  merges: [oca 627705784e]
+  merges: [oca 16.0]
 /opt/oca/partner-contact:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/partner-contact.git}
   target: oca 16.0
-  merges: [oca ae55b92571]
+  merges: [oca 16.0]
 /opt/oca/product-attribute:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/product-attribute.git}
   target: oca 16.0
-  merges: [oca e1d17ca2da]
+  merges: [oca 16.0]
 /opt/oca/project:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/project.git}
   target: oca 16.0
-  merges: [oca f315744df8]
+  merges: [oca 16.0]
 /opt/oca/purchase-reporting:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/purchase-reporting.git}
   target: oca 16.0
-  merges: [oca e0f0ef81f7]
+  merges: [oca 16.0]
 /opt/oca/purchase-workflow:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/purchase-workflow.git}
   target: oca 16.0
-  merges: [oca e9ac490a67]
+  merges: [oca 16.0]
 /opt/oca/queue:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/queue.git}
   target: oca 16.0
-  merges: [oca 2929bbb00a]
+  merges: [oca 16.0]
 /opt/oca/reporting-engine:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/reporting-engine.git}
   target: oca 16.0
-  merges: [oca cb3c9ae852]
+  merges: [oca 16.0]
 /opt/oca/sale-reporting:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/sale-reporting.git}
   target: oca 16.0
-  merges: [oca f5e7ca6eb7]
+  merges: [oca 16.0]
 /opt/oca/sale-workflow:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/sale-workflow.git}
   target: oca 16.0
-  merges: [oca 6162b70f27]
+  merges: [oca 16.0]
 /opt/oca/server-tools:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/server-tools.git}
   target: oca 16.0
-  merges: [oca b80ffc2745]
+  merges: [oca 16.0]
 /opt/oca/server-ux:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/server-ux.git}
   target: oca 16.0
-  merges: [oca b7794f9c75]
+  merges: [oca 16.0]
 /opt/oca/stock-logistics-reporting:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/stock-logistics-reporting.git}
   target: oca 16.0
-  merges: [oca 744697b8be]
+  merges: [oca 16.0]
 /opt/oca/stock-logistics-warehouse:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/stock-logistics-warehouse.git}
   target: oca 16.0
-  merges: [oca 64b903b32a]
+  merges: [oca 16.0]
 /opt/oca/stock-logistics-workflow:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/stock-logistics-workflow.git}
   target: oca 16.0
-  merges: [oca 60accd9e95]
+  merges: [oca 16.0]
 /opt/oca/web:
+  defaults: {depth: 1}
   remotes: {oca: https://github.com/OCA/web.git}
   target: oca 16.0
-  merges: [oca 28a14f7bac]
+  merges: [oca 16.0]
