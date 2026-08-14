@@ -158,7 +158,9 @@ PYEOF
     # p.ej. res_company.keep_partner_bank_without_payment_mode) o al migrar de versión.
     # ODOO_UPDATE=all (o lista de módulos). Se ejecuta una vez por valor (flag).
     if [ -n "${ODOO_UPDATE}" ] && [ "${DB_STATE}" = "init" ]; then
-        UFLAG="/var/lib/odoo/.updated-${ODOO_DB}"
+        # Flag por VERSIÓN: si la imagen cambia de versión (p.ej. tras corregir un
+        # build-arg 18->16, o al migrar 16->17), el -u all se vuelve a ejecutar.
+        UFLAG="/var/lib/odoo/.updated-${ODOO_DB}-${ODOO_VERSION}"
         UPREV="$(cat "$UFLAG" 2>/dev/null || echo '')"
         if [ "${ODOO_UPDATE}" != "$UPREV" ]; then
             echo "[init] sincronizando esquema: odoo -u ${ODOO_UPDATE} (puede tardar varios minutos)"
