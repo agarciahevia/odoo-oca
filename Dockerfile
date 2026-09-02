@@ -43,8 +43,12 @@ WORKDIR /opt/oca
 COPY repos*.yaml /opt/oca/
 RUN F="repos-${ODOO_VERSION}.yaml"; \
     [ -f "/opt/oca/$F" ] || F="repos.yaml"; \
-    sed -i "s/18\.0/${ODOO_VERSION}/g" "/opt/oca/$F" && \
-    gitaggregate -c "/opt/oca/$F" -j 4
+    sed -i "s/18\.0/${ODOO_VERSION}/g" "/opt/oca/$F"; \
+    n=0; until gitaggregate -c "/opt/oca/$F" -j 4; do \
+        n=$((n+1)); \
+        if [ "$n" -ge 4 ]; then echo "[gitaggregate] falló tras $n intentos"; exit 1; fi; \
+        echo "[gitaggregate] fallo (red/rate-limit GitHub) -> reintento $n en 20s…"; sleep 20; \
+    done
 
 # Fija cryptography/pyOpenSSL para TODOS los installs (incl. deps TRANSITIVAS de los
 # requirements OCA). Son EXACTAMENTE el par que fija Odoo 16 (requirements.txt oficial,
