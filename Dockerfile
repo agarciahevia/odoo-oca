@@ -12,6 +12,12 @@ FROM odoo:${ODOO_VERSION}
 ARG ODOO_VERSION=18.0
 ENV ODOO_VERSION=${ODOO_VERSION}
 
+# Token de GitHub (opcional) para AUTENTICAR los clones OCA de gitaggregate. Los
+# clones anónimos tienen un límite bajo y, tras muchos builds, GitHub bloquea la IP
+# ("could not read Username"). Con un token (aunque sea sin scopes) el límite sube a
+# 5.000/h. Se usa solo durante el build y se limpia del gitconfig al terminar.
+ARG GITHUB_TOKEN=""
+
 # pip nuevo (bookworm, Odoo 18/19) exige --break-system-packages; via env se
 # aplica sin pasar el flag. pip viejo (bullseye, Odoo 16) lo ignora y como no
 # tiene PEP-668 instala igual. Así el mismo Dockerfile sirve para 16 y 18/19.
@@ -44,11 +50,15 @@ COPY repos*.yaml /opt/oca/
 RUN F="repos-${ODOO_VERSION}.yaml"; \
     [ -f "/opt/oca/$F" ] || F="repos.yaml"; \
     sed -i "s/18\.0/${ODOO_VERSION}/g" "/opt/oca/$F"; \
+    if [ -n "${GITHUB_TOKEN}" ]; then \
+        git config --global url."https://${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"; \
+    fi; \
     n=0; until gitaggregate -c "/opt/oca/$F" -j 4; do \
         n=$((n+1)); \
-        if [ "$n" -ge 4 ]; then echo "[gitaggregate] falló tras $n intentos"; exit 1; fi; \
+        if [ "$n" -ge 4 ]; then echo "[gitaggregate] falló tras $n intentos"; rm -f /root/.gitconfig; exit 1; fi; \
         echo "[gitaggregate] fallo (red/rate-limit GitHub) -> reintento $n en 20s…"; sleep 20; \
-    done
+    done; \
+    rm -f /root/.gitconfig
 
 # Fija cryptography/pyOpenSSL para TODOS los installs (incl. deps TRANSITIVAS de los
 # requirements OCA). Son EXACTAMENTE el par que fija Odoo 16 (requirements.txt oficial,
