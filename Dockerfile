@@ -25,6 +25,14 @@ ENV PIP_BREAK_SYSTEM_PACKAGES=1
 
 USER root
 
+# Bullseye (Odoo 16) es EOL: sus paquetes se movieron a archive.debian.org (404 en
+# deb.debian.org). Solo se reescriben los sources si la imagen es bullseye.
+RUN if grep -q bullseye /etc/os-release; then \
+        sed -i 's|deb.debian.org|archive.debian.org|g; s|security.debian.org|archive.debian.org|g' \
+            /etc/apt/sources.list $(ls /etc/apt/sources.list.d/* 2>/dev/null); \
+        echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99archive; \
+    fi
+
 # Herramientas de build + git-aggregator
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
