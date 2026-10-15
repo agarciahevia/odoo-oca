@@ -25,11 +25,15 @@ ENV PIP_BREAK_SYSTEM_PACKAGES=1
 
 USER root
 
-# Bullseye (Odoo 16) es EOL: sus paquetes se movieron a archive.debian.org (404 en
-# deb.debian.org). Solo se reescriben los sources si la imagen es bullseye.
+# Bullseye (Odoo 16) es EOL y Debian lo está moviendo a archive.debian.org: hay
+# paquetes que ya solo están en uno de los dos sitios (404 en el otro). Se AÑADE
+# archive como segunda fuente; apt prueba la otra URL si una da 404. Solo bullseye.
 RUN if grep -q bullseye /etc/os-release; then \
-        sed -i 's|deb.debian.org|archive.debian.org|g; s|security.debian.org|archive.debian.org|g' \
-            /etc/apt/sources.list $(ls /etc/apt/sources.list.d/* 2>/dev/null); \
+        printf '%s\n' \
+            'deb http://archive.debian.org/debian bullseye main' \
+            'deb http://archive.debian.org/debian bullseye-updates main' \
+            'deb http://archive.debian.org/debian-security bullseye-security main' \
+            > /etc/apt/sources.list.d/archive.list; \
         echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99archive; \
     fi
 
