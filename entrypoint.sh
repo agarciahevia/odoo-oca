@@ -7,7 +7,9 @@ set -e
 if [ "$(id -u)" = "0" ]; then
     mkdir -p /var/lib/odoo /mnt/extra-addons /mnt/custom-addons
     chown -R odoo:odoo /var/lib/odoo /mnt/extra-addons /mnt/custom-addons 2>/dev/null || true
-    exec gosu odoo "$0" "$@"
+    # setpriv (util-linux, viene en la imagen base) en vez de gosu: gosu ya no se
+    # puede descargar de bullseye (EOL). HOME explícito: setpriv no lo cambia.
+    exec env HOME=/var/lib/odoo setpriv --reuid=odoo --regid=odoo --init-groups "$0" "$@"
 fi
 
 CONF=/etc/odoo/odoo.conf

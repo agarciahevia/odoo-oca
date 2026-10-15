@@ -50,7 +50,6 @@ RUN apt-get update \
         fontconfig \
         fonts-liberation \
         default-jdk-headless \
-        gosu \
     && pip3 install --no-cache-dir git-aggregator \
     && rm -rf /var/lib/apt/lists/*
 
@@ -128,11 +127,11 @@ RUN ADDONS=$(find /opt/oca -mindepth 1 -maxdepth 1 -type d | sort | paste -sd, -
     && chown -R odoo:odoo /opt/oca /mnt/extra-addons /mnt/custom-addons /etc/odoo
 
 # Entrypoint propio: arranca como ROOT (para corregir permisos del volumen
-# /var/lib/odoo, que Dokploy monta como root) y baja a 'odoo' con gosu.
+# /var/lib/odoo, que Dokploy monta como root) y baja a 'odoo' con setpriv (util-linux, ya en la imagen).
 COPY entrypoint.sh /opt/entrypoint.sh
 RUN chmod +x /opt/entrypoint.sh
 
 # Sin 'USER odoo': el entrypoint corre como root, hace chown del volumen y
-# re-ejecuta como odoo (gosu). Así las sesiones/filestore son escribibles.
+# re-ejecuta como odoo (setpriv). Así las sesiones/filestore son escribibles.
 ENTRYPOINT ["/opt/entrypoint.sh"]
 CMD ["odoo"]
