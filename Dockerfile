@@ -25,15 +25,14 @@ ENV PIP_BREAK_SYSTEM_PACKAGES=1
 
 USER root
 
-# Bullseye (Odoo 16) es EOL y Debian lo está moviendo a archive.debian.org: hay
-# paquetes que ya solo están en uno de los dos sitios (404 en el otro). Se AÑADE
-# archive como segunda fuente; apt prueba la otra URL si una da 404. Solo bullseye.
+# Bullseye (Odoo 16) es EOL. Estado oct-2026: bullseye/bullseye-updates siguen
+# completos en deb.debian.org (archive.debian.org da 404 sueltos), pero
+# bullseye-security SOLO está en archive (deb.debian.org lo indexa y da 404).
+# -> security desde archive, el resto como venía. Solo en bullseye.
 RUN if grep -q bullseye /etc/os-release; then \
-        printf '%s\n' \
-            'deb http://archive.debian.org/debian bullseye main' \
-            'deb http://archive.debian.org/debian bullseye-updates main' \
-            'deb http://archive.debian.org/debian-security bullseye-security main' \
-            > /etc/apt/sources.list.d/archive.list; \
+        sed -i '/bullseye-security/d' /etc/apt/sources.list $(ls /etc/apt/sources.list.d/*.list 2>/dev/null); \
+        echo 'deb http://archive.debian.org/debian-security bullseye-security main' \
+            > /etc/apt/sources.list.d/archive-security.list; \
         echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99archive; \
     fi
 
