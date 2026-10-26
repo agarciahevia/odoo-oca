@@ -208,3 +208,8 @@
   remotes: {oca: https://github.com/OCA/web.git}
   target: oca 16.0
   merges: [oca 16.0]
+/opt/oca/storage:
+  defaults: {depth: 1}
+  remotes: {oca: https://github.com/OCA/storage.git}
+  target: oca 16.0
+  merges: [oca 16.0]
