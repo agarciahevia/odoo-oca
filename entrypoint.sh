@@ -104,6 +104,15 @@ if [ -n "${SPECS}" ]; then
         BASE="$(cat /etc/odoo/.addons_base)"
         sed -i "s|^addons_path = .*|addons_path = ${BASE}${EXTRA_DIRS}|" "$CONF"
     fi
+    # Dependencias Python de los repos a medida (external_dependencies, p.ej. schwifty
+    # de community-data-files). Los de repos.yaml se instalan en el build; estos se
+    # clonan al arrancar -> pip --user a /var/lib/odoo/.local (volumen persistido).
+    for d in ${EXTRA_DIRS//,/ }; do
+        [ -f "${d}/requirements.txt" ] || continue
+        echo "[addons] pip requirements de $(basename "${d}")"
+        pip3 install --user --no-cache-dir -q -c /opt/oca/constraints.txt -r "${d}/requirements.txt" \
+            || echo "[addons] WARN: falló pip en $(basename "${d}")"
+    done
 fi
 
 # --- Inicialización de BD + instalación de módulos (opcional) --------
