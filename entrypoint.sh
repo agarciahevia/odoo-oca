@@ -119,7 +119,7 @@ fi
 # ODOO_DB              = nombre de la base de datos Odoo a crear/usar
 # ODOO_INSTALL_MODULES = lista separada por comas de módulos a instalar
 # Se ejecuta en el primer arranque y cada vez que cambie la lista
-# (instalar un módulo ya instalado es un no-op).
+# (en BD existente solo se instalan los que falten: ver abajo).
 if [ -n "${ODOO_DB}" ]; then
     # 'web' SIEMPRE: garantiza el cliente web / login aunque falle otro módulo
     WANT="base,web${ODOO_INSTALL_MODULES:+,${ODOO_INSTALL_MODULES}}"
@@ -156,11 +156,32 @@ PYEOF
     if [ "${DB_STATE}" = "fresh" ] && [ -n "${ODOO_SKIP_FRESH_INIT}" ]; then
         echo "[init] BD '${ODOO_DB}' no existe y ODOO_SKIP_FRESH_INIT=1 -> no se crea (esperando restore)"
     elif [ "${DB_STATE}" = "fresh" ] || [ "${WANT}" != "$MPREV" ]; then
-        echo "[init] BD '${ODOO_DB}' estado=${DB_STATE} -> módulos: ${WANT}"
-        if odoo -d "${ODOO_DB}" -i "${WANT}" ${LANG_OPT} ${DBARGS} --stop-after-init --no-http; then
+        INST="${WANT}"
+        if [ "${DB_STATE}" = "init" ]; then
+            # -i sobre un módulo YA instalado NO es un no-op: lo recarga en modo init y
+            # reescribe sus datos noupdate (base -> compañía "My Company", su ciudad…).
+            # En BD existente solo se instalan los que falten.
+            INST=$(python3 - "${HOST}" "${PORT:-5432}" "${USER}" "${PASSWORD}" "${ODOO_DB}" "${WANT}" <<'PYEOF'
+import sys, psycopg2
+host, port, user, pwd, dbname, want = sys.argv[1:7]
+c = psycopg2.connect(host=host, port=port, user=user, password=pwd, dbname=dbname, connect_timeout=10)
+cur = c.cursor()
+cur.execute("select name from ir_module_module where state='installed'")
+done = {r[0] for r in cur.fetchall()}
+print(",".join(m for m in want.split(",") if m and m not in done))
+PYEOF
+) || INST=""
+        fi
+        if [ -z "${INST}" ]; then
+            echo "[init] BD '${ODOO_DB}': módulos ya instalados (${WANT})"
             echo "${WANT}" > "$MFLAG"
         else
-            echo "[init] WARN: instalación de módulos falló"
+            echo "[init] BD '${ODOO_DB}' estado=${DB_STATE} -> instalar: ${INST}"
+            if odoo -d "${ODOO_DB}" -i "${INST}" ${LANG_OPT} ${DBARGS} --stop-after-init --no-http; then
+                echo "${WANT}" > "$MFLAG"
+            else
+                echo "[init] WARN: instalación de módulos falló"
+            fi
         fi
     fi
 
