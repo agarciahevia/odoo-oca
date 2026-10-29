@@ -126,6 +126,39 @@ if [ -n "${ODOO_DB}" ]; then
     DBARGS="--db_host=${HOST} --db_port=${PORT:-5432} --db_user=${USER} --db_password=${PASSWORD}"
     LANG_OPT=""
     [ -n "${ODOO_LANGUAGE}" ] && LANG_OPT="--load-language=${ODOO_LANGUAGE}"
+    # Toda orden que muta una BD EXISTENTE (-i/-u) pasa por aquí: antes hace pg_dump
+    # al volumen y, si la orden falla, el contenedor NO arranca Odoo sobre la BD a
+    # medias. FAILMARK guarda el dump bueno: mientras exista no se vuelve a volcar
+    # (sería una BD ya tocada) ni se rota; se reintenta en cada arranque.
+    BKDIR=/var/lib/odoo/backups
+    FAILMARK="/var/lib/odoo/.mutation-failed-${ODOO_DB}"
+    mutate_db() {
+        local dump
+        dump="$(cat "$FAILMARK" 2>/dev/null || true)"
+        if [ -z "$dump" ]; then
+            mkdir -p "$BKDIR"
+            dump="${BKDIR}/pre-update-${ODOO_DB}-$(date +%Y%m%d-%H%M%S).dump"
+            echo "[backup] pg_dump -> ${dump}"
+            if ! PGPASSWORD="${PASSWORD}" pg_dump -h "${HOST}" -p "${PORT:-5432}" -U "${USER}" -Fc -f "$dump" "${ODOO_DB}"; then
+                rm -f "$dump"
+                echo "[backup] ERROR: pg_dump falló -> no se toca la BD (no arranca Odoo)"
+                exit 1
+            fi
+            # ponytail: rotación fija a 3, sacar a variable si hace falta más historial
+            ls -1t "${BKDIR}"/pre-update-"${ODOO_DB}"-*.dump | tail -n +4 | xargs -r rm -f
+        else
+            echo "[backup] reintento tras fallo previo; dump bueno: ${dump}"
+        fi
+        if odoo -d "${ODOO_DB}" "$@" ${DBARGS} --stop-after-init --no-http; then
+            rm -f "$FAILMARK"
+            return 0
+        fi
+        echo "$dump" > "$FAILMARK"
+        echo "[init] ERROR: 'odoo $*' falló; la BD puede haber quedado a medias. Odoo NO arranca."
+        echo "[init] Para volver al estado previo (desde la terminal del contenedor):"
+        echo "[init]   PGPASSWORD=*** pg_restore -h ${HOST} -U ${USER} -d ${ODOO_DB} --clean --if-exists ${dump} && rm ${FAILMARK}"
+        exit 1
+    }
     # ¿La BD ya está inicializada? Protege los datos aunque se pierda el flag.
     DB_STATE=$(python3 - "${HOST}" "${PORT:-5432}" "${USER}" "${PASSWORD}" "${ODOO_DB}" <<'PYEOF'
 import sys
@@ -177,7 +210,10 @@ PYEOF
             echo "${WANT}" > "$MFLAG"
         else
             echo "[init] BD '${ODOO_DB}' estado=${DB_STATE} -> instalar: ${INST}"
-            if odoo -d "${ODOO_DB}" -i "${INST}" ${LANG_OPT} ${DBARGS} --stop-after-init --no-http; then
+            if [ "${DB_STATE}" = "init" ]; then
+                mutate_db -i "${INST}" ${LANG_OPT}
+                echo "${WANT}" > "$MFLAG"
+            elif odoo -d "${ODOO_DB}" -i "${INST}" ${LANG_OPT} ${DBARGS} --stop-after-init --no-http; then
                 echo "${WANT}" > "$MFLAG"
             else
                 echo "[init] WARN: instalación de módulos falló"
@@ -196,11 +232,8 @@ PYEOF
         UPREV="$(cat "$UFLAG" 2>/dev/null || echo '')"
         if [ "${ODOO_UPDATE}" != "$UPREV" ]; then
             echo "[init] sincronizando esquema: odoo -u ${ODOO_UPDATE} (puede tardar varios minutos)"
-            if odoo -d "${ODOO_DB}" -u "${ODOO_UPDATE}" ${DBARGS} --stop-after-init --no-http; then
-                echo "${ODOO_UPDATE}" > "$UFLAG"
-            else
-                echo "[init] WARN: update (-u ${ODOO_UPDATE}) falló"
-            fi
+            mutate_db -u "${ODOO_UPDATE}"
+            echo "${ODOO_UPDATE}" > "$UFLAG"
         fi
     fi
 
